@@ -12,16 +12,19 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const router = createBrowserRouter([
-  {
-    path: '/babelfish.ai/',
-    element: <Broadcaster supabase={supabase} />,
-  },
-  {
-    path: '/babelfish.ai/receiver/:channelId',
-    element: <Receiver supabase={supabase} />,
-  },
-]);
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: <Broadcaster supabase={supabase} />,
+    },
+    {
+      path: '/receiver/:channelId',
+      element: <Receiver supabase={supabase} />,
+    },
+  ],
+  { basename: '/babelfish.ai/' }
+);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
