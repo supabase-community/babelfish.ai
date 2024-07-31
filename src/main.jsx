@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createHashRouter, RouterProvider } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
 import Broadcaster from './routes/broadcaster';
@@ -12,19 +12,16 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const router = createBrowserRouter(
-  [
-    {
-      path: '/',
-      element: <Broadcaster supabase={supabase} />,
-    },
-    {
-      path: '/receiver',
-      element: <Receiver supabase={supabase} />,
-    },
-  ],
-  { basename: '/babelfish.ai/' }
-);
+const router = createHashRouter([
+  {
+    path: '/receiver/:channelId',
+    element: <Receiver supabase={supabase} />,
+  },
+  {
+    path: '/*',
+    element: <Broadcaster supabase={supabase} />,
+  },
+]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

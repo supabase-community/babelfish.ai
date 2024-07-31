@@ -279,7 +279,7 @@ function App({ supabase }) {
                 broadcast and translate it in realtime!
               </p>
               <a
-                href={`${import.meta.env.BASE_URL}receiver/${
+                href={`${import.meta.env.BASE_URL}#/receiver/${
                   channelId.current
                 }`}
                 target="_blank"
@@ -288,12 +288,12 @@ function App({ supabase }) {
               >
                 {`${import.meta.env.VITE_DOMAIN}${
                   import.meta.env.BASE_URL
-                }receiver/${channelId.current}`}
+                }#/receiver/${channelId.current}`}
               </a>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${
                   import.meta.env.VITE_DOMAIN
-                }${import.meta.env.BASE_URL}receiver/${channelId.current}`}
+                }${import.meta.env.BASE_URL}#/receiver/${channelId.current}`}
                 className="mt-2"
               />
             </>
