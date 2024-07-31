@@ -19,7 +19,7 @@ const router = createBrowserRouter(
       element: <Broadcaster supabase={supabase} />,
     },
     {
-      path: '/receiver/:channelId',
+      path: '/receiver',
       element: <Receiver supabase={supabase} />,
     },
   ],
