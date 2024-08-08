@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import Progress from '../components/Progress';
 import { LanguageSelector } from '../components/LanguageSelectorBroadcaster';
+import GitHubLink from '../components/GitHubLink';
 import broadcast from '../utils/broadcaster';
 import { randomId } from '../utils/utils';
 
@@ -211,6 +212,7 @@ function App({ supabase }) {
   return IS_WEBGPU_AVAILABLE ? (
     <div className="flex flex-col h-screen mx-auto justify-end text-gray-800 bg-white">
       <div className="h-full overflow-auto scrollbar-thin flex justify-center items-center flex-col relative">
+        <GitHubLink url="https://github.com/supabase-community/babelfish.ai" />
         <div className="flex flex-col items-center mb-1 max-w-[400px] text-center">
           <h1 className="text-4xl font-bold mb-1">
             Babelfish.ai - Broadcaster
