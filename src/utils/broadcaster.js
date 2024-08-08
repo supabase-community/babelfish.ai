@@ -1,18 +1,10 @@
-function getLastFullSentence(message) {
-  // Regular expression to match sentences ending with '.', '!', or '?'
-  const sentenceRegex = /[^.!?]+[.!?]+/g;
-  const sentences = message.match(sentenceRegex);
-
-  // Return the last sentence if found, otherwise return an empty string
-  return sentences ? sentences[sentences.length - 1].trim() : '';
-}
-
 let lastBroadcast = '';
 
 export default function broadcast({ message, language, channel }) {
-  // TDOD: better chinese handling as there's no punctuaction.
-  const lastSentence =
-    language === 'zh' ? message : getLastFullSentence(message);
+  const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' });
+  const iterator = segmenter.segment(message);
+  const segments = Array.from(iterator);
+  const lastSentence = segments[segments.length - 1].segment;
   if (lastSentence === lastBroadcast) return;
   console.log('broadcast', { message: lastSentence, language });
   channel.send({
