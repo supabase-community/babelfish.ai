@@ -4,8 +4,7 @@ import { AudioVisualizer } from '../components/AudioVisualizer';
 import Progress from '../components/Progress';
 import { LanguageSelector } from '../components/LanguageSelectorBroadcaster';
 import GitHubLink from '../components/GitHubLink';
-import broadcast from '../utils/broadcaster';
-import { randomId } from '../utils/utils';
+import translate from '../utils/translator';
 
 const IS_WEBGPU_AVAILABLE = !!navigator.gpu;
 
@@ -13,7 +12,7 @@ const WHISPER_SAMPLING_RATE = 16_000;
 const MAX_AUDIO_LENGTH = 30; // seconds
 const MAX_SAMPLES = WHISPER_SAMPLING_RATE * MAX_AUDIO_LENGTH;
 
-function App({ supabase }) {
+function App() {
   // Create a reference to the worker object.
   const worker = useRef(null);
 
@@ -30,16 +29,18 @@ function App({ supabase }) {
   const [language, setLanguage] = useState('en');
   const languageRef = useRef(language);
 
+  // Translation
+  const [translation, setTranslation] = useState(null);
+  const [targetLanguage, setTargetLanguage] = useState('de');
+  const targetLanguageRef = useRef(targetLanguage);
+  const translatorRef = useRef(null);
+
   // Processing
   const [recording, setRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [stream, setStream] = useState(null);
   const audioContextRef = useRef(null);
-
-  // Broadcast
-  const channelId = useRef(randomId());
-  const channel = supabase.channel(channelId.current);
 
   // We use the `useEffect` hook to setup the worker as soon as the `App` component is mounted.
   useEffect(() => {
@@ -54,7 +55,7 @@ function App({ supabase }) {
     }
 
     // Create a callback function for messages from the worker thread.
-    const onMessageReceived = (e) => {
+    const onMessageReceived = async (e) => {
       switch (e.data.status) {
         case 'loading':
           // Model file start load: add a new progress item to the list.
@@ -113,11 +114,19 @@ function App({ supabase }) {
           // Generation complete: re-enable the "Generate" button
           setIsProcessing(false);
           setText(e.data.output);
-          broadcast({
-            channel,
-            message: e.data.output[0],
-            language: languageRef.current,
-          });
+          if ('translation' in self && 'createTranslator' in self.translation) {
+            // The Translator API is supported.
+            console.log('Chrome Built In Translator supported!');
+            if (!translatorRef.current)
+              return console.log('No translator (yet)');
+            translate({
+              translator: translatorRef.current,
+              setTranslation,
+              targetLanguage: targetLanguageRef.current,
+              message: e.data.output[0],
+              language: languageRef.current,
+            });
+          }
           break;
       }
     };
@@ -218,8 +227,7 @@ function App({ supabase }) {
             Babelfish.ai - Broadcaster
           </h1>
           <h2 className="text-xl font-semibold">
-            Real-time in-browser speech recognition & decentralized in-browser
-            AI translation.
+            Real-time in-browser speech recognition & built-in AI translation.
           </h2>
         </div>
 
@@ -270,31 +278,6 @@ function App({ supabase }) {
             </>
           )}
 
-          {status === 'ready' && (
-            <>
-              <p className="max-w-[480px] mb-4">
-                Your Broadcast Channel ID is{' '}
-                <pre className="inline-block bg-gray-20 py-1 px-2 rounded-md text-blue-500 font-medium">
-                  {channelId.current}
-                </pre>
-                . Send this link to your friends so they can receive the
-                broadcast and translate it in realtime!
-              </p>
-              <a
-                href={`${import.meta.env.BASE_URL}#/receiver/${
-                  channelId.current
-                }`}
-                target="_blank"
-                rel="noreferrer"
-                className="border px-4 py-2 rounded-lg bg-blue-400 text-white hover:bg-blue-500 disabled:bg-blue-100 disabled:cursor-not-allowed select-none"
-              >
-                {`${import.meta.env.VITE_DOMAIN}${
-                  import.meta.env.BASE_URL
-                }#/receiver/${channelId.current}`}
-              </a>
-            </>
-          )}
-
           <div className="w-[500px] p-2">
             <AudioVisualizer className="w-full rounded-lg" stream={stream} />
             {status === 'ready' && (
@@ -311,26 +294,54 @@ function App({ supabase }) {
             )}
           </div>
           {status === 'ready' && (
-            <div className="relative w-full flex justify-center">
-              <LanguageSelector
-                language={language}
-                setLanguage={(e) => {
-                  recorderRef.current?.stop();
-                  setLanguage(e);
-                  languageRef.current = e;
-                  recorderRef.current?.start();
-                }}
-              />
-              <button
-                className="border rounded-lg px-2 absolute right-2"
-                onClick={() => {
-                  recorderRef.current?.stop();
-                  recorderRef.current?.start();
-                }}
-              >
-                Reset
-              </button>
-            </div>
+            <>
+              <div className="relative w-full flex justify-center">
+                <LanguageSelector
+                  language={language}
+                  setLanguage={(e) => {
+                    recorderRef.current?.stop();
+                    setLanguage(e);
+                    languageRef.current = e;
+                    recorderRef.current?.start();
+                  }}
+                />
+                <button
+                  className="border rounded-lg px-2 absolute right-2"
+                  onClick={() => {
+                    recorderRef.current?.stop();
+                    recorderRef.current?.start();
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="relative w-full flex justify-center">
+                <p className="max-w-[480px] mb-4">Translate</p>
+
+                <div className="textbox-container">
+                  <LanguageSelector
+                    language={targetLanguage}
+                    setLanguage={(e) => {
+                      targetLanguageRef.current = e;
+                      setTargetLanguage(e);
+
+                      self.translation
+                        .createTranslator({
+                          sourceLanguage: languageRef.current,
+                          targetLanguage: e,
+                        })
+                        .then((translator) => {
+                          translatorRef.current = translator;
+                        });
+                    }}
+                  />
+                </div>
+
+                <p className="w-full h-[80px] overflow-y-auto overflow-wrap-anywhere border rounded-lg p-2">
+                  {translation ?? 'Loading...'}
+                </p>
+              </div>
+            </>
           )}
           {status === 'loading' && (
             <div className="w-full max-w-[500px] text-left mx-auto p-4">
