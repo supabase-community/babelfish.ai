@@ -13,7 +13,24 @@ class MyTranslationPipeline {
 
     static async getInstance(progress_callback = null) {
         if (this.instance === null) {
-            this.instance = pipeline(this.task, this.model, { progress_callback });
+            try {
+                console.log('Attempting to load translation pipeline with WebGPU...');
+                this.instance = await pipeline(this.task, this.model, { 
+                    progress_callback,
+                    device: 'webgpu',
+                    // Suppress warnings
+                    quiet: true
+                });
+                console.log('Translation pipeline loaded successfully with WebGPU');
+            } catch (error) {
+                console.warn('WebGPU failed for translation, falling back to WASM:', error.message);
+                this.instance = await pipeline(this.task, this.model, { 
+                    progress_callback,
+                    device: 'wasm',
+                    quiet: true
+                });
+                console.log('Translation pipeline loaded successfully with WASM fallback');
+            }
         }
 
         return this.instance;
@@ -39,7 +56,8 @@ self.addEventListener('message', async (event) => {
         callback_function: x => {
             self.postMessage({
                 status: 'update',
-                output: translator.tokenizer.decode(x[0].output_token_ids, { skip_special_tokens: true })
+                output: translator.tokenizer.decode(x[0].output_token_ids, { skip_special_tokens: true }),
+                messageId: event.data.messageId
             });
         }
     });
@@ -48,5 +66,6 @@ self.addEventListener('message', async (event) => {
     self.postMessage({
         status: 'complete',
         output: output,
+        messageId: event.data.messageId
     });
 });
